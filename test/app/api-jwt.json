@@ -13,10 +13,10 @@
     ],
     "components": {
         "securitySchemes": {
-            "JWTAuth": {
-                "type": "apiKey",
-                "in": "header",
-                "name": "X-Auth-Token"
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "format": "JWT"
             }
         }
     },
@@ -177,7 +177,7 @@
     },
     "security": [
         {
-            "JWTAuth": []
+            "bearerAuth": []
         }
     ]
 }

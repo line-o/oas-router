@@ -25,14 +25,20 @@ declare %private variable $auth:jwt := jwt:instance($auth:secret, $auth:token-li
 (:~
  : The name of the securityScheme in API definition
  :)
-declare variable $auth:METHOD := "JWTAuth";
+declare variable $auth:METHOD := "bearerAuth";
 
 (:~
  : which header to check for the token 
  : TODO: Authorization header seems to be swallowed by jetty
  : TODO: implement function to cut off scheme (BEARER )
  :)
-declare variable $auth:AUTH_HEADER := "X-Auth-Token";
+declare variable $auth:AUTH_HEADER := "Authorization";
+
+(:~
+ : bearer token authentication MUST use this scheme
+ : because of that, it is hard-coded for simplicity and speed
+ :)
+declare variable $auth:scheme := "Bearer";
 
 declare function auth:issue-token($request as map(*)) {
     if (
@@ -64,10 +70,11 @@ declare function auth:issue-token($request as map(*)) {
 declare function auth:bearer-auth ($spec as map(*), $parameters as map(*)) as map(*)? {
     try {
         (: need to access request header directly because it will not be part of parameters :)
-        let $token := request:get-header($auth:AUTH_HEADER)
+        let $header := request:get-header($auth:AUTH_HEADER)
         return
-            if (exists($token))
+            if (exists($header) and starts-with($auth:scheme))
             then (
+                let $token := substring-after($header, " ") (: cut off any scheme :)
                 let $payload := $auth:jwt?read($token)
                 return map {
                     "name": $payload?name,
@@ -83,6 +90,6 @@ declare function auth:bearer-auth ($spec as map(*), $parameters as map(*)) as ma
         error($errors:BAD_REQUEST, "token invalid")
     }
     catch * {
-        error($errors:SERVER_ERROR, "Server error")
+        error($errors:SERVER_ERROR, "Server error", $err:description)
     }
 };
